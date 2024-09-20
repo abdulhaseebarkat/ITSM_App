@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:telecom_app/pm_info.dart';
 
 class PMList extends StatelessWidget {
-  PMList({super.key});
+  final int id;
+  final String username;
+  final String fullName;
+  final String role;
+  PMList({super.key, required this.id, required this.username, required this.fullName, required this.role});
   final List<Map<String, String>> rMlist = [
     {'name': 'Haseeb3', 'id': 'RM1'},
   ];

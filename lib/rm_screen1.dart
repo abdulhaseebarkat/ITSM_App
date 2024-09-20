@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:telecom_app/rm_info.dart';
 
 class RMList extends StatelessWidget {
-  RMList({super.key});
+  final int id;
+  final String username;
+  final String fullName;
+  final String role;
+  RMList({super.key, required this.id, required this.username, required this.fullName, required this.role});
   final List<Map<String, String>> groupLeads = [
     {'name': 'Haseeb2', 'id': 'TGL1'},
   ];

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:telecom_app/fault_detail_screen.dart';
 
 class COList extends StatelessWidget {
-  COList({super.key});
+  final int id;
+  final String username;
+  final String fullName;
+  final String role;
+  COList({super.key, required this.id, required this.username, required this.fullName, required this.role});
   final List<Map<String, String>> clusterOfficers = [
     {'name': 'Haseeb1', 'id': 'CO1'},
   ];

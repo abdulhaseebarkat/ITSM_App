@@ -1,36 +1,65 @@
 import 'dart:io';
-
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';  
+import 'package:image_picker/image_picker.dart';
 
 class COItemPage extends StatefulWidget {
-  const COItemPage({super.key});
+  final int id;
+  final String username;
+  final String fullName;
+  final String password;
+  final String role;
+  const COItemPage({super.key, required this.id, required this.username, required this.fullName, required this.password, required this.role});
 
   @override
   State<COItemPage> createState() => _COItemPage();
 }
 
 class _COItemPage extends State<COItemPage> {
-  final List<String> _faultNatures = ['ESU-BLN-03628',
-'ESU-BLN-03610',
-'ESU-BLN-03229',
-'ESU-BLN-03608',
-'ESU-BLN-03227',
-'ESU-BLN-03605',
-'ESU-BLN-03559',
-'ESU-BLN-03558',
-'ESU-BLN-03623',
-'ESU-BLN-03624',
-'ES2-BLN-05845',
-'ESU-BLN-03233',
-'ESU-BLN-03617',
-'ESU-BLN-03551'];
-  String? _selectedFaultNature;
+  List<String> _sites = [];
+  String? _selectedSite;
   bool _spareRequired = false;
   bool _cashRequired = false;
   XFile? _image;
 
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    fetchAssignedSites();
+  }
+
+  Future<void> fetchAssignedSites() async {
+    String basicAuth = 'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
+
+    var headers = {
+      'Authorization': basicAuth,  // Corrected passing of Basic Auth
+    };
+
+    var request = http.Request('GET', Uri.parse('http://192.168.225.166:8080/api/user/sites'));
+
+    request.headers.addAll(headers);
+
+    try {
+      http.StreamedResponse response = await request.send();
+
+      if (response.statusCode == 200) {
+        String responseBody = await response.stream.bytesToString();
+        print('Sites fetched: $responseBody');  // Debug output
+
+        List<dynamic> sites = json.decode(responseBody);
+        setState(() {
+          _sites = List<String>.from(sites.map((site) => site['siteName'].toString()));  // Update dropdown list
+        });
+      } else {
+        print('Error fetching sites: ${response.reasonPhrase}');  // Debug error
+      }
+    } catch (e) {
+      print('Error: $e');  // Debug exception
+    }
+  }
 
   Future<void> _pickImage() async {
     final pickedImage = await _picker.pickImage(source: ImageSource.camera);
@@ -41,10 +70,7 @@ class _COItemPage extends State<COItemPage> {
 
   void _submitForm() {
     // Perform your form submission logic here
-    /*print('Form submitted');
-    print('Site ID: ${_selectedFaultNature}');
-    print('Spare Required: $_spareRequired');
-    print('Cash Required: $_cashRequired');*/
+    print('Form Submitted');
   }
 
   @override
@@ -59,22 +85,20 @@ class _COItemPage extends State<COItemPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Site ID Dropdown
+            // Site ID Dropdown populated with fetched sites
             DropdownButtonFormField<String>(
               decoration: const InputDecoration(
                 labelText: 'Site ID',
                 border: OutlineInputBorder(),
               ),
-              value: _selectedFaultNature,
-              items: _faultNatures
-                  .map((nature) => DropdownMenuItem<String>(
-                        value: nature,
-                        child: Text(nature),
-                      ))
-                  .toList(),
+              value: _selectedSite,
+              items: _sites.map((site) => DropdownMenuItem<String>(
+                    value: site,
+                    child: Text(site),
+                  )).toList(),
               onChanged: (value) {
                 setState(() {
-                  _selectedFaultNature = value;
+                  _selectedSite = value;
                 });
               },
             ),
@@ -89,7 +113,7 @@ class _COItemPage extends State<COItemPage> {
             ),
             const SizedBox(height: 16),
 
-            // Evidence Label and Camera Access
+            // Evidence Section (Image Picker)
             const Text(
               'Evidence',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

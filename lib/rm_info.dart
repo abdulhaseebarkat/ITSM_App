@@ -3,29 +3,31 @@ class RMInfo extends StatefulWidget{
   final String officerId;
   final String officerName;
   const RMInfo({
-    Key? key,
+    super.key,
     required this.officerId,
     required this.officerName,
-  }) : super(key: key);
+  });
   @override
   State<RMInfo> createState() => _RMInfo();
 }
 
 class _RMInfo extends State<RMInfo> {
-    final List<String> _faultNatures = ['ESU-BLN-03628',
-'ESU-BLN-03610',
-'ESU-BLN-03229',
-'ESU-BLN-03608',
-'ESU-BLN-03227',
-'ESU-BLN-03605',
-'ESU-BLN-03559',
-'ESU-BLN-03558',
-'ESU-BLN-03623',
-'ESU-BLN-03624',
-'ES2-BLN-05845',
-'ESU-BLN-03233',
-'ESU-BLN-03617',
-'ESU-BLN-03551'];
+  final List<String> _faultNatures = [
+    'ESU-BLN-03628',
+    'ESU-BLN-03610',
+    'ESU-BLN-03229',
+    'ESU-BLN-03608',
+    'ESU-BLN-03227',
+    'ESU-BLN-03605',
+    'ESU-BLN-03559',
+    'ESU-BLN-03558',
+    'ESU-BLN-03623',
+    'ESU-BLN-03624',
+    'ES2-BLN-05845',
+    'ESU-BLN-03233',
+    'ESU-BLN-03617',
+    'ESU-BLN-03551' 
+  ];
     String? _selectedFaultNature;
   @override
   Widget build(BuildContext context) {

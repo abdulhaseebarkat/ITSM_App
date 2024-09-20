@@ -5,8 +5,12 @@ import 'package:telecom_app/rm_screen1.dart';
 import 'package:telecom_app/tgl_screen1.dart';
 
 class DashboardPage extends StatelessWidget {
+  final int id;
   final String username;
-  const DashboardPage({super.key, required this.username});
+  final String role;
+  final String fullName;
+  final String password;
+  const DashboardPage({super.key, required this.username,required this.id, required this.fullName, required this.role, required this.password});
 
   @override
   Widget build(BuildContext context) {
@@ -62,30 +66,50 @@ class DashboardPage extends StatelessWidget {
                   Card(
                     elevation: 10,
                     child: Padding(padding: const EdgeInsets.all(10.0),
-                    child: IconButton(onPressed: () {
-                     if(username == 'co@admin.com'){
-                      Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(builder: (context) => const COItemPage()),
-                            );
-                     }
-                     else if(username == 'tgl@admin.com'){
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (context) => COList())
-                        );
-                     }
-                     else if(username == 'rm@admin.com'){
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (context) => RMList())
-                      );
-                     }
-                     else if(username == 'pm@admin.com'){
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (context) => PMList())
-                      );
-                     }
-                    },
-                    icon: const Icon(Icons.build, color: Colors.blue,),
-                    ),
+                    child: IconButton(
+  onPressed: () {
+    if (role == 'CO') {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => COItemPage(
+          id: id,
+          username: username,
+          fullName: fullName,
+          role: role,
+          password: password,
+        )),
+      );
+    } else if (role == 'TGL') {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => COList(
+           id: id,
+          username: username,
+          fullName: fullName,
+          role: role,
+        )),
+      );
+    } else if (role == 'RM') {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => RMList(
+           id: id,
+          username: username,
+          fullName: fullName,
+          role: role,
+        )),
+      );
+    } else if (role == 'PM') {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => PMList(
+           id: id,
+          username: username,
+          fullName: fullName,
+          role: role,
+        )),
+      );
+    }
+  },
+  icon: const Icon(Icons.build, color: Colors.blue),
+)
+,
                     ),
                   ),
                   const SizedBox(height: 5,),
