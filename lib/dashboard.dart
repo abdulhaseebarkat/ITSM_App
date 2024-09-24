@@ -67,49 +67,49 @@ class DashboardPage extends StatelessWidget {
                     elevation: 10,
                     child: Padding(padding: const EdgeInsets.all(10.0),
                     child: IconButton(
-  onPressed: () {
-    if (role == 'CO') {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => COItemPage(
-          id: id,
-          username: username,
-          fullName: fullName,
-          role: role,
-          password: password,
-        )),
-      );
-    } else if (role == 'TGL') {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => COList(
-           id: id,
-          username: username,
-          fullName: fullName,
-          role: role,
-        )),
-      );
-    } else if (role == 'RM') {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => RMList(
-           id: id,
-          username: username,
-          fullName: fullName,
-          role: role,
-        )),
-      );
-    } else if (role == 'PM') {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => PMList(
-           id: id,
-          username: username,
-          fullName: fullName,
-          role: role,
-        )),
-      );
-    }
-  },
-  icon: const Icon(Icons.build, color: Colors.blue),
-)
-,
+                        onPressed: () {
+                          if (role == 'CO') {
+                            Navigator.push(context,
+                            MaterialPageRoute(builder: (context) => COItemPage(id: id,
+                            username: username, 
+                            fullName: fullName, 
+                            password: password, 
+                            role: role))
+                            );
+                          } else if (role == 'TGL') {
+                            Navigator.push(context,
+                              MaterialPageRoute(builder: (context) => COList(
+                                id: id,
+                                username: username,
+                                fullName: fullName,
+                                role: role,
+                                password: password,
+                              )),
+                            );
+                          } else if (role == 'RM') {
+                            Navigator.push(context,
+                              MaterialPageRoute(builder: (context) => RMList(
+                                id: id,
+                                username: username,
+                                fullName: fullName,
+                                role: role,
+                                password: password,
+                              )),
+                            );
+                          } else if (role == 'PM') {
+                            Navigator.push(context,
+                              MaterialPageRoute(builder: (context) => PMList(
+                                id: id,
+                                username: username,
+                                fullName: fullName,
+                                role: role,
+                                password: password,
+                              )),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.build, color: Colors.blue),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 5,),

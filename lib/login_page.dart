@@ -33,7 +33,7 @@ class _LoginPageState extends State<LoginPage> {
   };
   var request = http.Request(
     'POST',
-    Uri.parse('http://192.168.225.166:8080/public/api/auth/login'),
+    Uri.parse('http://192.168.32.157:8080/public/api/auth/login'),
   );
 
   // Request body with credentials
