@@ -2,7 +2,9 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart';
 class COItemPage extends StatefulWidget {
   final int id;
   final String username;
@@ -53,7 +55,7 @@ class _COItemPage extends State<COItemPage> {
 
     try {
       var response = await http.get(
-        Uri.parse('http://192.168.32.157:8080/api/user/supervisors'),
+        Uri.parse('http://192.168.89.106:8080/api/user/supervisors'),
         headers: headers,
       );
 
@@ -91,7 +93,7 @@ class _COItemPage extends State<COItemPage> {
       'Authorization': basicAuth,
     };
 
-    var request = http.Request('GET', Uri.parse('http://192.168.32.157:8080/api/user/sites'));
+    var request = http.Request('GET', Uri.parse('http://192.168.89.106:8080/api/user/sites'));
 
     request.headers.addAll(headers);
 
@@ -119,14 +121,21 @@ class _COItemPage extends State<COItemPage> {
   }
 
   Future<void> _pickImage() async {
-    final pickedImage = await _picker.pickImage(source: ImageSource.camera);
-    setState(() {
+    final pickedImage = await _picker.pickImage(source: ImageSource.camera, imageQuality: 80);
+
+    if(pickedImage != null){
+      _image = XFile(pickedImage.path);
+      setState(() {
       _image = pickedImage;
     });
+    }
+    else{
+      print('No image selected');
+    }
   }
 
   // Submit the request and forward it to the TGL and next to the RM
-  void _submitForm() async {
+  Future<void> _submitForm() async {
     if (_tglAssigneeId == null || _rmAssigneeId == null) {
       print('No TGL or RM assigned');
       return;
@@ -137,7 +146,6 @@ class _COItemPage extends State<COItemPage> {
         : "No description provided";
     String status = "PENDING";
     String type = _cashRequired ? "CASH" : "SPARE";
-    String imagePath = _image != null ? _image!.path : '';
     int userId = widget.id;
 
     // Get the selected site's siteId
@@ -150,45 +158,60 @@ class _COItemPage extends State<COItemPage> {
       return;
     }
 
-    var requestBody = jsonEncode({
-      "faultDescription": faultDescription,
-      "status": status,
-      "type": type,
-      "imagePath": imagePath,
-      "currentLevel": 'TGL',
-      "userId": userId,
-      "siteId": siteId, // Use the correct siteId
-      "forwardTo": _tglAssigneeId,  // Forward to TGL
-      "forwardedBy": userId,
-      "nextAssignee": _rmAssigneeId // Next assignee is RM
+    var uri = Uri.parse('http://192.168.89.106:8080/api/request');
+
+    var request = http.MultipartRequest('POST', uri);
+
+    var requestJson = jsonEncode({
+      'faultDescription': faultDescription,
+      'status': status,
+      'type': type,
+      'currentLevel': 'TGL',
+      'userId': userId,
+      'siteId': siteId,
+      'forwardTo': _tglAssigneeId,
+      'forwardedBy': userId,
+      'nextAssignee': _rmAssigneeId
     });
 
-    String basicAuth = 'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
+    var requestPart = http.MultipartFile.fromString(
+      'request',
+      requestJson,
+      contentType: MediaType('application','json'),
+    );
+    request.files.add(requestPart);
 
-    var headers = {
-      'Content-Type': 'application/json',
-      'Authorization': basicAuth,
-    };
+    //Add Images
+    var stream = http.ByteStream(_image!.openRead());
+    var length = await _image!.length();
+    
+    var multipartFile = http.MultipartFile('images', 
+    stream, 
+    length,
+    filename: basename(_image!.path),
+    contentType: MediaType('image', 'jpeg'),
+    );
+
+    request.files.add(multipartFile);
+    
+    String basicAuth = 'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
+    request.headers['Authorization'] = basicAuth;
 
     try {
-      var response = await http.post(
-        Uri.parse('http://192.168.32.157:8080/api/request'),
-        headers: headers,
-        body: requestBody,
-      );
-
-      // Log the full response
-      print('Response status: ${response.statusCode}');
+    var streamedResponse = await request.send();
+    var response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode == 201) { // Changed to 201 Created
+      // Handle success
+      print('Uploaded successfully!');
+    } else {
+      // Handle error
+      print('Failed to upload. Status code: ${response.statusCode}');
       print('Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        print('Request submitted successfully');
-      } else {
-        print('Error submitting request: ${response.statusCode} - ${response.body}');
-      }
-    } catch (e) {
-      print('Error: $e');
     }
+  } catch (e) {
+    print('Error occurred: $e');
+  } 
+    
   }
 
   @override

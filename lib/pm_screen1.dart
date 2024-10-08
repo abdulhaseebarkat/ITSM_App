@@ -41,7 +41,7 @@ class _PMListState extends State<PMList> {
       'Authorization': basicAuth,
     };
 
-    var request = http.Request('GET', Uri.parse('http://192.168.32.157:8080/api/request/requests'));
+    var request = http.Request('GET', Uri.parse('http://192.168.89.106:8080/api/request/requests'));
     request.headers.addAll(headers);
 
     try {
@@ -84,7 +84,7 @@ class _PMListState extends State<PMList> {
     print('Fetching users for siteId: $siteId'); // Debugging
 
     var response = await http.get(
-      Uri.parse('http://192.168.32.157:8080/api/site/$siteId/users'), // Fetch users by siteId
+      Uri.parse('http://192.168.89.106:8080/api/site/$siteId/users'), // Fetch users by siteId
       headers: headers,
     );
 

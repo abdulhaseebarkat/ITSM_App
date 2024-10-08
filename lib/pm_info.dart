@@ -42,7 +42,7 @@ class _PMInfoState extends State<PMInfo> {
 
       var request = http.Request(
         'GET',
-        Uri.parse('http://192.168.32.157:8080/api/request/requests'),
+        Uri.parse('http://192.168.89.106:8080/api/request/requests'),
       );
       request.headers.addAll(headers);
 
@@ -107,7 +107,7 @@ class _PMInfoState extends State<PMInfo> {
 
     try {
       var response = await http.put(
-        Uri.parse('http://192.168.32.157:8080/api/request/${widget.requestId}'),
+        Uri.parse('http://192.168.89.106:8080/api/request/${widget.requestId}'),
         headers: headers,
         body: requestBody,
       );

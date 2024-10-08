@@ -41,7 +41,7 @@ class _COListState extends State<COList> {
     };
 
     var request =
-        http.Request('GET', Uri.parse('http://192.168.32.157:8080/api/request/requests'));
+        http.Request('GET', Uri.parse('http://192.168.89.106:8080/api/request/requests'));
 
     request.headers.addAll(headers);
 
@@ -82,7 +82,7 @@ class _COListState extends State<COList> {
     };
 
     var response = await http.get(
-      Uri.parse('http://192.168.32.157:8080/api/site/$siteId/users'),
+      Uri.parse('http://192.168.89.106:8080/api/site/$siteId/users'),
       headers: headers,
     );
 
