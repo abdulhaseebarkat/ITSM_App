@@ -24,15 +24,63 @@ class RMInfo extends StatefulWidget {
 
 class _RMInfoState extends State<RMInfo> {
   Map<String, dynamic>? _requestDetails;
+  Map<int, String> _siteIdToNameMap = {}; // Map to store site IDs and names
   bool _isLoading = true;
+  //ignore: unused_field
+  bool _isProcessing = false;
+
+  // Define your backend IP address here
+  final String serverIp = 'http://13.49.230.203:8080';
 
   @override
   void initState() {
     super.initState();
     fetchRequestDetails(); // Fetch request details when the screen loads
+    fetchSiteDetails(); // Fetch site details to map site IDs to names
   }
 
-  // Fetch request details by ID
+  // Function to fetch the site details
+  Future<void> fetchSiteDetails() async {
+    try {
+      String basicAuth = 'Basic ' +
+          base64Encode(utf8.encode('${widget.username}:${widget.password}'));
+      var headers = {
+        'Authorization': basicAuth,
+      };
+
+      var request = http.Request(
+        'GET',
+        Uri.parse('$serverIp/api/user/sites'),
+      );
+      request.headers.addAll(headers);
+
+      http.StreamedResponse response = await request.send();
+
+      if (response.statusCode == 200) {
+        String responseBody = await response.stream.bytesToString();
+        List<dynamic> sites = jsonDecode(responseBody);
+
+        // Store site IDs and names in the map
+        setState(() {
+          for (var site in sites) {
+            _siteIdToNameMap[site['siteId']] = site['siteName'];
+          }
+        });
+      } else {
+        print('Error fetching site details: ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
+
+  // Function to get the site name from the site ID
+  String getSiteName(int? siteId) {
+    if (siteId == null) return 'N/A';
+    return _siteIdToNameMap[siteId] ?? 'Unknown Site';
+  }
+
+  // Function to fetch request details
   Future<void> fetchRequestDetails() async {
     try {
       String basicAuth =
@@ -43,7 +91,7 @@ class _RMInfoState extends State<RMInfo> {
 
       var request = http.Request(
         'GET',
-        Uri.parse('http://192.168.89.106:8080/api/request/requests'),
+        Uri.parse('$serverIp/api/request/requests'),
       );
       request.headers.addAll(headers);
 
@@ -83,24 +131,24 @@ class _RMInfoState extends State<RMInfo> {
     }
   }
 
-  // Function to handle the update request (for approve/forward/reject actions)
+  // Function to update the request (as in the original code)
   Future<void> updateRequest(String status, String currentLevel, int? forwardTo, int? approvedBy) async {
+    setState(() {
+      _isProcessing = true;
+    });
     var requestBody = jsonEncode({
       "status": status,
       "currentLevel": currentLevel,
-      "userId": _requestDetails?['userId'], // User who submitted the request
-      "siteId": _requestDetails?['siteId'], // Site associated with the request
-      "forwardTo": forwardTo, // PM's ID or null
-      "verifiedBy": _requestDetails?['verifiedBy'], // RM's ID for verification
-      "forwardedBy": widget.officerId, // RM's ID for forwarding
-      "approvedBy": approvedBy, // RM's ID when approving
-      "nextAssignee": forwardTo == 1 ? 1 : null, // PM's ID when forwarding to PM
+      "userId": _requestDetails?['userId'],
+      "siteId": _requestDetails?['siteId'],
+      "forwardTo": forwardTo,
+      "verifiedBy": _requestDetails?['verifiedBy'],
+      "forwardedBy": widget.officerId,
+      "approvedBy": approvedBy,
+      "nextAssignee": forwardTo == 1 ? 1 : null,
     });
 
-    print('Request body: $requestBody'); // Log the request body for debugging
-
     String basicAuth = 'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
-
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': basicAuth,
@@ -108,49 +156,71 @@ class _RMInfoState extends State<RMInfo> {
 
     try {
       var response = await http.put(
-        Uri.parse('http://192.168.89.106:8080/api/request/${widget.requestId}'),
+        Uri.parse('$serverIp/api/request/${widget.requestId}'),
         headers: headers,
         body: requestBody,
       );
 
-      // Log the full response
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
       if (response.statusCode == 200) {
-        print('Request updated successfully');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Request updated successfully')),
         );
+        Navigator.pop(context);
       } else {
-        print('Error updating request: ${response.statusCode} - ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error updating request: ${response.statusCode}')),
         );
       }
     } catch (e) {
-      print('Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
     }
+    finally{
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+  }
+
+  // Widget to build images
+  Widget buildImageWidget(String imagePath) {
+    String imageUrl = replaceLocalhostWithIP(imagePath);
+    String basicAuth = 'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
+
+    return Image.network(
+      imageUrl,
+      height: 200,
+      fit: BoxFit.cover,
+      headers: {'Authorization': basicAuth, "Cache-Control": "no-cache"},
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          height: 200,
+          color: Colors.grey,
+          child: const Center(child: Text('Failed to load image')),
+        );
+      },
+    );
+  }
+
+  // Replace localhost with IP
+  String replaceLocalhostWithIP(String imagePath) {
+    return imagePath.replaceAll('http://localhost:8080', serverIp);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ticket Details'),
-      ),
+      appBar: AppBar(title: const Text('Ticket Details')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: ListView(
                 children: [
+                  // Display Site Name instead of Site ID
                   Text(
-                    'Site: ${_requestDetails?['siteId'] ?? 'N/A'}',
+                    'Site: ${getSiteName(_requestDetails?['siteId'])}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                   const SizedBox(height: 20),
@@ -169,50 +239,38 @@ class _RMInfoState extends State<RMInfo> {
                     style: const TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    'Evidence',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+                  const Text('Evidence', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 10),
-                  _requestDetails?['imagePath'] != null
-                      ? Image.network(
-                          _requestDetails!['imagePath'],
-                          height: 200,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              height: 200,
-                              color: Colors.grey[300],
-                              child: const Center(
-                                child: Text('Failed to load image'),
-                              ),
-                            );
-                          },
+                  _requestDetails?['imagePaths'] != null && _requestDetails!['imagePaths'].isNotEmpty
+                      ? Column(
+                          children: List<Widget>.generate(
+                            _requestDetails!['imagePaths'].length,
+                            (index) {
+                              String imagePath = _requestDetails!['imagePaths'][index]['imagePath'];
+                              return buildImageWidget(imagePath);
+                            },
+                          ),
                         )
                       : const Text('No evidence provided'),
                   const SizedBox(height: 20),
-                  // Action Buttons (Approve, Forward to PM, Reject)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          // Approve button logic (status = "APPROVED", currentLevel = "PM")
                           updateRequest("APPROVED", "PM", null, widget.officerId);
                         },
                         child: const Text('Approve'),
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          // Forward to PM button logic (status = "VERIFIED", currentLevel = "PM", forwardTo = 1 (PM))
                           updateRequest("VERIFIED", "PM", 1, null); // PM's ID = 1
                         },
                         child: const Text('Forward to PM'),
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          // Reject button logic (status = "REJECTED", currentLevel = "CO")
-                          updateRequest("REJECTED", "CO", null, null);
+                          updateRequest("DECLINED", "CO", null, null);
                         },
                         child: const Text('Reject'),
                       ),

@@ -25,11 +25,21 @@ class PMInfo extends StatefulWidget {
 class _PMInfoState extends State<PMInfo> {
   Map<String, dynamic>? _requestDetails;
   bool _isLoading = true;
+  //ignore: unused_field
+  bool _isProcessing = false;
+
+  // Define your backend IP address here
+  final String serverIp = 'http://13.49.230.203:8080';
 
   @override
   void initState() {
     super.initState();
     fetchRequestDetails(); // Fetch request details when the screen loads
+  }
+
+  // Function to replace 'localhost' with the server IP in image URLs
+  String replaceLocalhostWithIP(String imagePath) {
+    return imagePath.replaceAll('http://localhost:8080', serverIp);
   }
 
   // Fetch request details by ID
@@ -42,7 +52,7 @@ class _PMInfoState extends State<PMInfo> {
 
       var request = http.Request(
         'GET',
-        Uri.parse('http://192.168.89.106:8080/api/request/requests'),
+        Uri.parse('$serverIp/api/request/requests'),
       );
       request.headers.addAll(headers);
 
@@ -84,6 +94,9 @@ class _PMInfoState extends State<PMInfo> {
 
   // Function to handle the update request (approve/reject actions)
   Future<void> updateRequest(String status) async {
+    setState(() {
+      _isProcessing = true;
+    });
     var requestBody = jsonEncode({
       "status": status,
       "currentLevel": "PM", // Update the current level to PM
@@ -107,7 +120,7 @@ class _PMInfoState extends State<PMInfo> {
 
     try {
       var response = await http.put(
-        Uri.parse('http://192.168.89.106:8080/api/request/${widget.requestId}'),
+        Uri.parse('$serverIp/api/request/${widget.requestId}'),
         headers: headers,
         body: requestBody,
       );
@@ -121,6 +134,7 @@ class _PMInfoState extends State<PMInfo> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Request updated successfully')),
         );
+        Navigator.pop(context);
       } else {
         print('Error updating request: ${response.statusCode} - ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -133,6 +147,37 @@ class _PMInfoState extends State<PMInfo> {
         SnackBar(content: Text('Error: $e')),
       );
     }
+    finally{
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+  }
+
+  // Build the evidence image widget with authentication headers
+  Widget buildImageWidget(String imagePath) {
+    String imageUrl = replaceLocalhostWithIP(imagePath);
+    String basicAuth = 'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
+    
+    return Image.network(
+      imageUrl,
+      height: 200,
+      fit: BoxFit.cover,
+      headers: {'Authorization': basicAuth, "Cache-Control": "no-cache"}, // Authorization header for image
+      errorBuilder: (context, error, stackTrace) {
+        print('Error loading image: $error');
+        return Container(
+          height: 200,
+          color: Colors.grey,
+          child: const Center(
+            child: Text(
+              'Failed to load image',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -145,8 +190,7 @@ class _PMInfoState extends State<PMInfo> {
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: ListView(
                 children: [
                   Text(
                     'Site: ${_requestDetails?['siteId'] ?? 'N/A'}',
@@ -173,20 +217,16 @@ class _PMInfoState extends State<PMInfo> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 10),
-                  _requestDetails?['imagePath'] != null
-                      ? Image.network(
-                          _requestDetails!['imagePath'],
-                          height: 200,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              height: 200,
-                              color: Colors.grey[300],
-                              child: const Center(
-                                child: Text('Failed to load image'),
-                              ),
-                            );
-                          },
+                  _requestDetails?['imagePaths'] != null &&
+                          _requestDetails!['imagePaths'].isNotEmpty
+                      ? Column(
+                          children: List<Widget>.generate(
+                            _requestDetails!['imagePaths'].length,
+                            (index) {
+                              String imagePath = _requestDetails!['imagePaths'][index]['imagePath'];
+                              return buildImageWidget(imagePath);
+                            },
+                          ),
                         )
                       : const Text('No evidence provided'),
                   const SizedBox(height: 20),
@@ -204,7 +244,7 @@ class _PMInfoState extends State<PMInfo> {
                       ElevatedButton(
                         onPressed: () {
                           // Reject button logic (status = "REJECTED")
-                          updateRequest("REJECTED");
+                          updateRequest("DECLINED");
                         },
                         child: const Text('Reject'),
                       ),
@@ -215,4 +255,5 @@ class _PMInfoState extends State<PMInfo> {
             ),
     );
   }
+
 }
