@@ -28,14 +28,16 @@
 
 // class _COItemPage extends State<COItemPage> {
 //   final TextEditingController faultDescriptionController = TextEditingController();
-//   List<Map<String, dynamic>> _sites = []; // To hold both siteId and siteName
+//   List<Map<String, dynamic>> _sites = [];
 //   List<dynamic> _supervisors = [];
 //   String? _selectedSite;
 //   bool _spareRequired = false;
 //   bool _cashRequired = false;
-//   List<XFile> _images = []; // To store up to four images
-//   int? _tglAssigneeId; // Specifically for the TGL
-//   int? _rmAssigneeId;  // Specifically for the RM
+//   List<XFile> _images = [];
+//   int? _tglAssigneeId;
+//   int? _rmAssigneeId;
+//   DateTime currentDateTime = DateTime.now();
+
 
 //   final ImagePicker _picker = ImagePicker();
 
@@ -46,13 +48,10 @@
 //     fetchAllSupervisors();
 //   }
 
-//   // Fetch all supervisors of the user and assign TGL and RM accordingly
 //   Future<void> fetchAllSupervisors() async {
 //     String basicAuth = 'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
 
-//     var headers = {
-//       'Authorization': basicAuth,
-//     };
+//     var headers = {'Authorization': basicAuth};
 
 //     try {
 //       var response = await http.get(
@@ -62,22 +61,17 @@
 
 //       if (response.statusCode == 200 || response.statusCode == 201) {
 //         var data = jsonDecode(response.body);
-//         print('Supervisors fetched: $data');
-
 //         setState(() {
 //           _supervisors = data;
 //           _tglAssigneeId = _supervisors.firstWhere(
 //             (supervisor) => supervisor['role'] == 'TGL',
 //             orElse: () => null,
-//           )['id']; // Assign TGL's ID
-
+//           )['id'];
 //           _rmAssigneeId = _supervisors.firstWhere(
 //             (supervisor) => supervisor['role'] == 'RM',
 //             orElse: () => null,
-//           )['id']; // Assign RM's ID
+//           )['id'];
 //         });
-//         print('TGL Assignee ID: $_tglAssigneeId');
-//         print('RM Assignee ID: $_rmAssigneeId');
 //       } else {
 //         print('Error fetching supervisors: ${response.reasonPhrase}');
 //       }
@@ -86,16 +80,12 @@
 //     }
 //   }
 
-//   // Fetch assigned sites
 //   Future<void> fetchAssignedSites() async {
 //     String basicAuth = 'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
 
-//     var headers = {
-//       'Authorization': basicAuth,
-//     };
+//     var headers = {'Authorization': basicAuth};
 
 //     var request = http.Request('GET', Uri.parse('http://13.49.230.203:8080/api/user/sites'));
-
 //     request.headers.addAll(headers);
 
 //     try {
@@ -103,8 +93,6 @@
 
 //       if (response.statusCode == 200) {
 //         String responseBody = await response.stream.bytesToString();
-//         print('Sites fetched: $responseBody');
-
 //         List<dynamic> sites = json.decode(responseBody);
 //         setState(() {
 //           _sites = List<Map<String, dynamic>>.from(sites.map((site) => {
@@ -137,7 +125,6 @@
 //     }
 //   }
 
-//   // Submit the request and forward it to the TGL and next to the RM
 //   Future<void> _submitForm() async {
 //     if (_tglAssigneeId == null || _rmAssigneeId == null) {
 //       print('No TGL or RM assigned');
@@ -151,7 +138,6 @@
 //     String type = _cashRequired ? "CASH" : "SPARE";
 //     int userId = widget.id;
 
-//     // Get the selected site's siteId
 //     int? siteId = _selectedSite != null
 //         ? _sites.firstWhere((site) => site['siteName'] == _selectedSite)['siteId']
 //         : null;
@@ -174,28 +160,27 @@
 //       'siteId': siteId,
 //       'forwardTo': _tglAssigneeId,
 //       'forwardedBy': userId,
-//       'nextAssignee': _rmAssigneeId
+//       'nextAssignee': _rmAssigneeId,
+//       'submissionDate': currentDateTime.toIso8601String(),
 //     });
 
-//     var requestPart = http.MultipartFile.fromString(
+//     request.files.add(http.MultipartFile.fromString(
 //       'request',
 //       requestJson,
 //       contentType: MediaType('application', 'json'),
-//     );
-//     request.files.add(requestPart);
+//     ));
 
-//     // Add multiple images
 //     for (var image in _images) {
 //       var stream = http.ByteStream(image.openRead());
 //       var length = await image.length();
 
-//       var multipartFile = http.MultipartFile('images',
+//       request.files.add(http.MultipartFile(
+//         'images',
 //         stream,
 //         length,
 //         filename: basename(image.path),
 //         contentType: MediaType('image', 'jpeg'),
-//       );
-//       request.files.add(multipartFile);
+//       ));
 //     }
 
 //     String basicAuth = 'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
@@ -206,6 +191,7 @@
 //       var response = await http.Response.fromStream(streamedResponse);
 //       if (response.statusCode == 201) {
 //         print('Uploaded successfully!');
+//         _resetForm();
 //       } else {
 //         print('Failed to upload. Status code: ${response.statusCode}');
 //         print('Response body: ${response.body}');
@@ -215,12 +201,21 @@
 //     }
 //   }
 
+//   void _resetForm() {
+//     setState(() {
+//       faultDescriptionController.clear();
+//       _selectedSite = null;
+//       _spareRequired = false;
+//       _cashRequired = false;
+//       _images.clear();
+//     });
+//   }
+
 //   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
 //       appBar: AppBar(
 //         title: const Text('CO Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
-//         centerTitle: false,
 //       ),
 //       body: SingleChildScrollView(
 //         child: Padding(
@@ -228,7 +223,7 @@
 //           child: Column(
 //             crossAxisAlignment: CrossAxisAlignment.start,
 //             children: [
-//               DropdownButtonFormField<String>(
+//              DropdownButtonFormField<String>(
 //                 decoration: const InputDecoration(
 //                   labelText: 'Site ID',
 //                   border: OutlineInputBorder(),
@@ -249,10 +244,7 @@
 //               const SizedBox(height: 16),
 //               TextFormField(
 //                 controller: faultDescriptionController,
-//                 decoration: const InputDecoration(
-//                   labelText: 'Fault Nature',
-//                   border: OutlineInputBorder(),
-//                 ),
+//                 decoration: const InputDecoration(labelText: 'Fault Nature', border: OutlineInputBorder()),
 //               ),
 //               const SizedBox(height: 16),
 //               const Text('Evidence', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -264,56 +256,27 @@
 //                   color: Colors.grey[300],
 //                   child: GridView.builder(
 //                     itemCount: _images.length + 1,
-//                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-//                       crossAxisCount: 2,
-//                       crossAxisSpacing: 10,
-//                       mainAxisSpacing: 10,
-//                     ),
+//                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
 //                     itemBuilder: (context, index) {
 //                       if (index == _images.length) {
-//                         return GestureDetector(
-//                           onTap: _pickImages,
-//                           child: Container(
-//                             color: Colors.grey[300],
-//                             child: const Icon(Icons.camera_alt, size: 50, color: Colors.grey),
-//                           ),
-//                         );
-//                       } else {
-//                         return Image.file(
-//                           File(_images[index].path),
-//                           fit: BoxFit.cover,
-//                         );
+//                         return const Icon(Icons.camera_alt, size: 50);
 //                       }
+//                       return Image.file(File(_images[index].path));
 //                     },
 //                   ),
 //                 ),
 //               ),
-//               const SizedBox(height: 16),
-        
-//               // Spare Required Checkbox
 //               CheckboxListTile(
 //                 title: const Text('Spare Required'),
 //                 value: _spareRequired,
-//                 onChanged: (bool? value) {
-//                   setState(() {
-//                     _spareRequired = value ?? false;
-//                   });
-//                 },
+//                 onChanged: (value) => setState(() => _spareRequired = value ?? false),
 //               ),
-        
-//               // Cash Required Checkbox
 //               CheckboxListTile(
 //                 title: const Text('Cash Required'),
 //                 value: _cashRequired,
-//                 onChanged: (bool? value) {
-//                   setState(() {
-//                     _cashRequired = value ?? false;
-//                   });
-//                 },
+//                 onChanged: (value) => setState(() => _cashRequired = value ?? false),
 //               ),
-        
-//               // Submit Button
-//               SizedBox(
+//                             SizedBox(
 //                 width: double.infinity,
 //                 child: ElevatedButton(
 //                   onPressed: _submitForm,
@@ -328,13 +291,22 @@
 //   }
 // }
 
+
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+
 
 class COItemPage extends StatefulWidget {
   final int id;
@@ -374,9 +346,33 @@ class _COItemPage extends State<COItemPage> {
   @override
   void initState() {
     super.initState();
+    _requestPermissions();
     fetchAssignedSites();
     fetchAllSupervisors();
   }
+
+Future<void> _requestPermissions() async {
+  // Check for location, camera, and storage permissions one by one
+  if (await Permission.location.isDenied) {
+    await Permission.location.request();
+  }
+
+  if (await Permission.camera.isDenied) {
+    await Permission.camera.request();
+  }
+
+  if (await Permission.storage.isDenied) {
+    await Permission.storage.request();
+  }
+
+  // Handle the case where permissions are permanently denied
+  if (await Permission.location.isPermanentlyDenied || 
+      await Permission.camera.isPermanentlyDenied || 
+      await Permission.storage.isPermanentlyDenied) {
+    await openAppSettings();
+  }
+}
+
 
   Future<void> fetchAllSupervisors() async {
     String basicAuth = 'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
@@ -438,22 +434,100 @@ class _COItemPage extends State<COItemPage> {
     }
   }
 
-  Future<void> _pickImages() async {
-    if (_images.length >= 4) {
-      print('Cannot select more than 4 images');
-      return;
-    }
+Future<void> _pickImages() async {
+  if (_images.length >= 4) {
+    print('Cannot select more than 4 images');
+    return;
+  }
 
-    final pickedImage = await _picker.pickImage(source: ImageSource.camera, imageQuality: 80);
+  try {
+    // Pick the image from the camera
+    final pickedImage = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
 
     if (pickedImage != null) {
-      setState(() {
-        _images.add(XFile(pickedImage.path));
-      });
+      // Get the current GPS location
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      double latitude = position.latitude;
+      double longitude = position.longitude;
+
+      // Reverse geocode to get the address
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        latitude, longitude,
+      );
+      Placemark place = placemarks[0];
+      String locationName =
+          "${place.subLocality}, ${place.locality}, ${place.country}";
+
+      // Read the image bytes and decode
+      File imageFile = File(pickedImage.path);
+      Uint8List imageBytes = await imageFile.readAsBytes();
+      img.Image? image = img.decodeImage(imageBytes);
+
+      if (image != null) {
+        // Save the updated image with a watermark (location name)
+        _addLocationWatermark(image, locationName);
+
+        // Save the image to a temporary directory
+        final directory = await getTemporaryDirectory();
+        String newPath =
+            '${directory.path}/geotagged_${basename(pickedImage.path)}';
+
+        // Write the new image with the watermark
+        File(newPath).writeAsBytesSync(img.encodeJpg(image, quality: 80));
+
+        // Add the geotagged image to the list
+        setState(() {
+          _images.add(XFile(newPath));
+        });
+
+        print('Image selected and geotagged with location: $locationName');
+      }
     } else {
       print('No image selected');
     }
+  } catch (e) {
+    print('Error picking image or getting location: $e');
   }
+}
+
+void _addLocationWatermark(img.Image image, String locationName) {
+  // Use the largest built-in Arial font for visibility
+  final font = img.arial_48; 
+  
+  // Watermark text with location
+  String watermarkText = 'Location: $locationName';
+
+  // Adjusted position to place watermark more prominently
+  int xPos = 20;
+  int yPos = image.height - 100; // Move higher to fit larger watermark
+
+  // Draw a larger semi-transparent black rectangle behind the text
+  img.fillRect(
+    image,
+    xPos,
+    yPos - 40,  // Increase height for larger font
+    xPos + 800, // Wider background to fit text better
+    yPos + 40,
+    img.getColor(0, 0, 0), // Black with transparency
+  );
+
+  // Draw the watermark text with padding for visibility
+  img.drawString(
+    image,
+    font,
+    xPos + 25,  // Offset text within the rectangle
+    yPos - 10,  // Center vertically within rectangle
+    watermarkText,
+    color: img.Color.fromRgb(255, 255, 255), // White for contrast
+  );
+}
+
+
 
   Future<void> _submitForm() async {
     if (_tglAssigneeId == null || _rmAssigneeId == null) {
@@ -599,12 +673,22 @@ class _COItemPage extends State<COItemPage> {
               CheckboxListTile(
                 title: const Text('Spare Required'),
                 value: _spareRequired,
-                onChanged: (value) => setState(() => _spareRequired = value ?? false),
+                onChanged: (value) {
+                  setState(() {
+                    _spareRequired = value ?? false;
+                    _cashRequired = false;
+                  });
+                },
               ),
               CheckboxListTile(
                 title: const Text('Cash Required'),
                 value: _cashRequired,
-                onChanged: (value) => setState(() => _cashRequired = value ?? false),
+                onChanged: (value){
+                  setState(() {
+                    _cashRequired = value ?? false;
+                    _spareRequired = false;
+                  });
+                },
               ),
                             SizedBox(
                 width: double.infinity,

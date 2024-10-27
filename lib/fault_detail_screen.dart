@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 
 class FaultDetailScreen extends StatefulWidget {
   final int officerId;
@@ -204,18 +206,25 @@ class _FaultDetailScreenState extends State<FaultDetailScreen> {
                   // Display Evidence Images
                   _requestDetails?['imagePaths'] != null &&
                           _requestDetails!['imagePaths'].isNotEmpty
-                      ? Column(
-                          children: List<Widget>.generate(
-                            _requestDetails!['imagePaths'].length,
-                            (index) {
-                              String imagePath =
-                                  _requestDetails!['imagePaths'][index]['imagePath'];
-
-                              // Use the widget builder function
-                              return buildImageWidget(imagePath);
-                            },
-                          ),
-                        )
+                      ? GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 8.0,
+                          mainAxisSpacing: 8.0,
+                          childAspectRatio: 1,
+                        ),
+                        itemCount: _requestDetails!['imagePaths'].length,
+                        itemBuilder: (context, index){
+                          String imagePath =
+                          _requestDetails!['imagePaths'][index]['imagePath'];
+                          return GestureDetector(
+                            onTap: () => _showFullScreenImage(index),
+                            child: buildImageWidget(imagePath),
+                          );
+                        },
+                      )
                       : const Text('No evidence provided'),
 
                   const SizedBox(height: 20),
@@ -381,4 +390,40 @@ Future<void> _rejectRequest() async {
       },
     );
   }
+  void _showFullScreenImage(int index){
+  showDialog(context: context, builder: (context){
+    return Dialog(
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        child: PhotoViewGallery.builder(
+          itemCount: _requestDetails!['imagePaths'].length,
+          builder: (context, index) {
+            String imagePath =
+            replaceLocalhostWithIP(_requestDetails!['imagePaths'][index]['imagePath']);
+            String basicAuth = 'Basic ' +
+            base64Encode(utf8.encode('${widget.username}:${widget.password}'));
+
+            return PhotoViewGalleryPageOptions(
+              imageProvider: NetworkImage(
+                imagePath,
+                headers: {'Authorization': basicAuth},
+              ),
+              minScale: PhotoViewComputedScale.contained,
+              maxScale: PhotoViewComputedScale.covered * 2,
+
+            );
+          },
+          pageController: PageController(initialPage: index),
+          scrollPhysics: const BouncingScrollPhysics(),
+          backgroundDecoration: BoxDecoration(
+            color: Theme.of(context).canvasColor,
+          )
+        ),
+      ),
+    );
+  });
 }
+
+}
+

@@ -1,6 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+import 'package:telecom_app/request_detail_page.dart';
 
 class CORequestsPage extends StatefulWidget {
   final int id;
@@ -21,22 +23,57 @@ class CORequestsPage extends StatefulWidget {
 class _CORequestsPageState extends State<CORequestsPage> {
   List<dynamic> _requests = [];
   bool _isLoading = true;
-  DateTime curDateTime = DateTime.now();
+  Map<int, String> _siteIdToNameMap = {}; // Map to store site IDs and names
+  final String serverIp = 'http://13.49.230.203:8080';
+
 
   @override
   void initState() {
     super.initState();
     fetchCORequests();
+    fetchSiteDetails(); // Fetch site details on initialization
+
   }
 
-  // Fetch CO's requests
-  Future<void> fetchCORequests() async {
+    // Fetch site details to map site IDs to names
+  Future<void> fetchSiteDetails() async {
     try {
-      String basicAuth =
-          'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
+      String basicAuth = 'Basic ' +
+          base64Encode(utf8.encode('${widget.username}:${widget.password}'));
       var headers = {
         'Authorization': basicAuth,
       };
+
+      var request = http.Request(
+        'GET',
+        Uri.parse('$serverIp/api/user/sites'),
+      );
+      request.headers.addAll(headers);
+
+      http.StreamedResponse response = await request.send();
+
+      if (response.statusCode == 200) {
+        String responseBody = await response.stream.bytesToString();
+        List<dynamic> sites = jsonDecode(responseBody);
+
+        // Store site IDs and names in the map
+        setState(() {
+          for (var site in sites) {
+            _siteIdToNameMap[site['siteId']] = site['siteName'];
+          }
+        });
+      } else {
+        print('Error fetching site details: ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
+
+  Future<void> fetchCORequests() async {
+    try {
+      String basicAuth = 'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
+      var headers = {'Authorization': basicAuth};
 
       var response = await http.get(
         Uri.parse('http://13.49.230.203:8080/api/request/co/requests'),
@@ -62,6 +99,11 @@ class _CORequestsPageState extends State<CORequestsPage> {
     }
   }
 
+    String getSiteName(int? siteId) {
+    if (siteId == null) return 'N/A';
+    return _siteIdToNameMap[siteId] ?? 'Unknown Site';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,14 +125,31 @@ class _CORequestsPageState extends State<CORequestsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 8),
+                        Text(
+                    'Site: ${getSiteName(request?['siteId'])}',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
                         Text('Status: ${request['status']}'),
                         Text('Current Level: ${request['currentLevel']}'),
                         Text('Fault Description: ${request['faultDescription'] ?? 'N/A'}'),
                         Text('Type: ${request['type'] ?? 'N/A'}'),
                         Text('Submission Date: ${request['submissionDate'] ?? 'N/A'}'),
-                        Text('View Date: ${curDateTime}'),
                       ],
                     ),
+                    onTap: () {
+                      // Navigate to the detail page with the request data
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => RequestDetailPage(
+                            request: request,
+                            username: widget.username,
+                            password: widget.password,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
