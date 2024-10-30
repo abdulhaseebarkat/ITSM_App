@@ -40,15 +40,31 @@ class _DashboardPageState extends State<DashboardPage> {
   // Available requests for TGL, RM, and PM
   int availableRequests = 0;
 
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
-    if (widget.role == 'CO') {
-      _fetchCORequests(); // Fetch CO request counts by status
-    } else if (widget.role == 'TGL' || widget.role == 'RM' || widget.role == 'PM') {
-      _fetchRequestsForRole(); // Fetch available requests for TGL, RM, and PM
-    }
+    // if (widget.role == 'CO') {
+    //   _fetchCORequests(); // Fetch CO request counts by status
+    // } else if (widget.role == 'TGL' || widget.role == 'RM' || widget.role == 'PM') {
+    //   _fetchRequestsForRole(); // Fetch available requests for TGL, RM, and PM
+    // }
+    _fetchDashboardData();
   }
+
+    // Fetch all necessary data based on role
+  Future<void> _fetchDashboardData() async {
+    setState(() => _isLoading = true);
+    if (widget.role == 'CO') {
+      await _fetchCORequests();
+    } else if (widget.role == 'TGL' || widget.role == 'RM' || widget.role == 'PM') {
+      await _fetchRequestsForRole();
+    }
+    setState(() => _isLoading = false);
+  }
+
+
 
   // Fetch CO requests by status
   Future<void> _fetchCORequests() async {
@@ -175,10 +191,19 @@ class _DashboardPageState extends State<DashboardPage> {
 Widget build(BuildContext context) {
   return Scaffold(
     appBar: _buildAppBar(),
-    body: Padding(
+    body: 
+    RefreshIndicator(onRefresh: _fetchDashboardData,
+    child: _isLoading
+    ? const Center(child: CircularProgressIndicator()) : _buildDashboardContent(),
+    ),
+  );
+}
+
+Widget _buildDashboardContent(){
+  return     Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: ListView(
+        //crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (widget.role == 'CO') _buildCODashboardCard(),
           if (widget.role == 'TGL' || widget.role == 'RM' || widget.role == 'PM') _buildRoleDashboardCard(),
@@ -188,8 +213,7 @@ Widget build(BuildContext context) {
           if (widget.role == 'CO') _buildCOTrackButton(context),
         ],
       ),
-    ),
-  );
+    );
 }
 
 // AppBar with logout button
@@ -383,4 +407,10 @@ void _navigateBasedOnRole(BuildContext context) {
     );
   }
 }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _fetchDashboardData();
+  }
 }

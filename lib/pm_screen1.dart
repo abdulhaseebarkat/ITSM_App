@@ -26,6 +26,7 @@ class PMList extends StatefulWidget {
 class _PMListState extends State<PMList> {
   List<Map<String, dynamic>> _requests = []; // To store filtered requests
   Map<int, String> _rmNames = {}; // To store RM names mapped by siteId
+  Map<int,String> _coNames = {};
 
   @override
   void initState() {
@@ -57,6 +58,7 @@ class _PMListState extends State<PMList> {
           _requests = List<Map<String, dynamic>>.from(
             requests.where((request) => request['forwardTo'] == widget.id),
           );
+          _requests.sort((a,b) => b['id'].compareTo(a['id']));
         });
 
         // Fetch RM names based on siteId in the requests
@@ -64,6 +66,11 @@ class _PMListState extends State<PMList> {
           int siteId = request['siteId'];
           int verifiedById = request['verifiedBy']; // Use verifiedBy field for RM
           fetchRMName(siteId, verifiedById);
+        }
+        for(var request in _requests) {
+          int siteId = request['siteId'];
+          int userId = request['userId'];
+          fetchCOName(siteId, userId);
         }
       } else {
         print('Error fetching requests: ${response.reasonPhrase}');
@@ -112,6 +119,45 @@ class _PMListState extends State<PMList> {
     }
   }
 
+    // Fetch the RM's name using the siteId and verifiedById from the request
+  Future<void> fetchCOName(int siteId, int userId) async {
+    String basicAuth = 'Basic ' + base64Encode(utf8.encode('${widget.username}:${widget.password}'));
+
+    var headers = {
+      'Authorization': basicAuth,
+    };
+
+    print('Fetching users for siteId: $siteId'); // Debugging
+
+    var response = await http.get(
+      Uri.parse('http://13.49.230.203:8080/api/site/$siteId/users'), // Fetch users by siteId
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> users = jsonDecode(response.body);
+      print('Users fetched for siteId $siteId: $users'); // Debugging users list
+
+      // Find the RM by matching the userId and role
+      bool foundCO = false;
+      for (var user in users) {
+        if (user['id'] == userId && user['role'] == 'CO') {
+          setState(() {
+            _coNames[userId] = user['fullName']; // Store the RM's name by userId
+          });
+          print('CO found: ${user['fullName']}'); // Debugging found RM
+          foundCO = true;
+          break;
+        }
+      }
+      if (!foundCO) {
+        print('CO not found for siteId $siteId and userId $userId'); // Debugging when RM not found
+      }
+    } else {
+      print('Error fetching CO name: ${response.reasonPhrase}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,9 +171,10 @@ class _PMListState extends State<PMList> {
               itemBuilder: (context, index) {
                 final request = _requests[index];
                 final rmName = _rmNames[request['verifiedBy']] ?? 'Loading RM...';
+                final coName = _coNames[request['userId']] ?? 'Loading CO...';
 
                 return ListTile(
-                  title: Text('RM: $rmName'), // Display RM's name
+                  title: Text('CO: $coName\nRM: $rmName'), // Display RM's name
                   subtitle: Text('Request ID: ${request['id']}'),
                   trailing: ElevatedButton(
                     onPressed: () {
@@ -136,7 +183,7 @@ class _PMListState extends State<PMList> {
                         MaterialPageRoute(
                           builder: (context) => PMInfo(
                             officerId: widget.id, // Pass PM's ID
-                            officerName: rmName, // Pass RM's name
+                            officerName: coName, // Pass RM's name
                             username: widget.username,
                             password: widget.password,
                             requestId: request['id'],

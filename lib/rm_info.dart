@@ -220,6 +220,9 @@ class _RMInfoState extends State<RMInfo> {
               padding: const EdgeInsets.all(8.0),
               child: ListView(
                 children: [
+                  Text('Officer: ${widget.officerName}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
                   // Display Site Name instead of Site ID
                   Text(
                     'Site: ${getSiteName(_requestDetails?['siteId'])}',
@@ -270,12 +273,12 @@ class _RMInfoState extends State<RMInfo> {
                       )
                       : const Text('No evidence provided'),
                   const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  Wrap(
+                    spacing: 8.0,
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          updateRequest("APPROVED", "PM", null, widget.officerId);
+                          updateRequest("APPROVED", "RM", widget.officerId, null);
                         },
                         child: const Text('Approve'),
                       ),
@@ -287,7 +290,7 @@ class _RMInfoState extends State<RMInfo> {
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          updateRequest("DECLINED", "CO", null, null);
+                          updateRequest("DECLINED", "RM", null, null);
                         },
                         child: const Text('Reject'),
                       ),

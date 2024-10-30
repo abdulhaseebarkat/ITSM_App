@@ -454,6 +454,7 @@ Future<void> _pickImages() async {
       );
       double latitude = position.latitude;
       double longitude = position.longitude;
+      DateTime currentDate = DateTime.now();
 
       // Reverse geocode to get the address
       List<Placemark> placemarks = await placemarkFromCoordinates(
@@ -470,7 +471,7 @@ Future<void> _pickImages() async {
 
       if (image != null) {
         // Save the updated image with a watermark (location name)
-        _addLocationWatermark(image, locationName);
+        _addLocationWatermark(image, locationName, latitude, longitude, currentDate);
 
         // Save the image to a temporary directory
         final directory = await getTemporaryDirectory();
@@ -495,12 +496,12 @@ Future<void> _pickImages() async {
   }
 }
 
-void _addLocationWatermark(img.Image image, String locationName) {
+void _addLocationWatermark(img.Image image, String locationName, double latitude, double longitude, DateTime date) {
   // Use the largest built-in Arial font for visibility
   final font = img.arial_48; 
   
   // Watermark text with location
-  String watermarkText = 'Location: $locationName';
+  String watermarkText = 'Location: $locationName\nLatitude: $latitude, Longitude: $longitude\nDate: ${date.toLocal().toString().split(' ')[0]}';
 
   // Adjusted position to place watermark more prominently
   int xPos = 20;
@@ -509,10 +510,10 @@ void _addLocationWatermark(img.Image image, String locationName) {
   // Draw a larger semi-transparent black rectangle behind the text
   img.fillRect(
     image,
-    xPos,
-    yPos - 40,  // Increase height for larger font
-    xPos + 800, // Wider background to fit text better
-    yPos + 40,
+    xPos - 10,
+    yPos - 70,  // Increase height for larger font
+    xPos + 1200, // Wider background to fit text better
+    yPos + 80,
     img.getColor(0, 0, 0), // Black with transparency
   );
 
@@ -521,7 +522,7 @@ void _addLocationWatermark(img.Image image, String locationName) {
     image,
     font,
     xPos + 25,  // Offset text within the rectangle
-    yPos - 10,  // Center vertically within rectangle
+    yPos - 60,  // Center vertically within rectangle
     watermarkText,
     color: img.Color.fromRgb(255, 255, 255), // White for contrast
   );

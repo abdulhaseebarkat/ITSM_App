@@ -237,6 +237,12 @@ class _PMInfoState extends State<PMInfo> {
               padding: const EdgeInsets.all(8.0),
               child: ListView(
                 children: [
+                  Text('Officer Name: ${widget.officerName}', 
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16
+                  ),
+                  ),
                   Text(
                     'Site: ${getSiteName(_requestDetails?['siteId'])}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),

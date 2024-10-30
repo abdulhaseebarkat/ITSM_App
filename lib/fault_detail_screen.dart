@@ -325,7 +325,7 @@ Future<void> _rejectRequest() async {
 
     var requestBody = json.encode({
       "status": "DECLINED", // Set status to REJECTED
-      "currentLevel": "CO", // Reset current level to CO (or other level based on your flow)
+      "currentLevel": "TGL", // Reset current level to CO (or other level based on your flow)
       "userId": _requestDetails?['userId'], // User who submitted the request
       "siteId": _requestDetails?['siteId'], // Site ID
       "forwardedBy": widget.officerId, // Officer rejecting the request

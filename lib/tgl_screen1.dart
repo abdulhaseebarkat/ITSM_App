@@ -58,6 +58,8 @@ class _COListState extends State<COList> {
           _requests = List<Map<String, dynamic>>.from(
             requests.where((request) => request['forwardTo'] == widget.id),
           );
+          _requests.sort((a,b) => b['id'].compareTo(a['id']));
+
         });
 
         // Fetch CO names based on userId in the requests
