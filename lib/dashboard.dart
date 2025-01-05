@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:telecom_app/co_item_page.dart';
 import 'package:telecom_app/pm_screen1.dart';
 import 'package:telecom_app/rm_screen1.dart';
+import 'package:telecom_app/requests_list_page.dart';
 import 'package:telecom_app/tgl_screen1.dart';
 import 'package:telecom_app/co_requests_page.dart';
 import 'login_page.dart';
@@ -305,28 +306,51 @@ Widget _buildRoleDashboardCard() {
 
 // Action Card for the role-specific navigation
 Widget _buildActionCard(BuildContext context) {
-  return SizedBox(
-    width: double.infinity,
-    child: Column(
-      children: [
-        Card(
-          elevation: 10,
-          child: Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: IconButton(
-              onPressed: () {
-                _navigateBasedOnRole(context);
-              },
-              icon: const Icon(Icons.build, color: Colors.blue),
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Column(
+        children: [
+          Card(
+            elevation: 10,
+            child: Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: IconButton(
+                onPressed: () {
+                  _navigateBasedOnRole(context);
+                },
+                icon: const Icon(Icons.build, color: Colors.blue),
+              ),
             ),
           ),
+          const SizedBox(height: 5),
+          const Text('CM', style: TextStyle(color: Colors.blue)),
+        ],
+      ),
+      const SizedBox(width: 20), // Space between icons
+      if (widget.role == 'CO')
+        Column(
+          children: [
+            Card(
+              elevation: 10,
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: IconButton(
+                  onPressed: () {
+                    _navigateToSparesScreen(context);
+                  },
+                  icon: const Icon(Icons.construction, color: Colors.green),
+                ),
+              ),
+            ),
+            const SizedBox(height: 5),
+            const Text('Spares', style: TextStyle(color: Colors.green)),
+          ],
         ),
-        const SizedBox(height: 5),
-        const Text('CM', style: TextStyle(color: Colors.blue)),
-      ],
-    ),
+    ],
   );
 }
+
 
 // Button for CO to track their requests
 Widget _buildCOTrackButton(BuildContext context) {
@@ -406,6 +430,21 @@ void _navigateBasedOnRole(BuildContext context) {
       ),
     );
   }
+}
+
+void _navigateToSparesScreen(BuildContext context) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => RequestsListPage(
+        id: widget.id,
+        username: widget.username,
+        fullName: widget.fullName,
+        role: widget.role,
+        password: widget.password,
+      ),
+    ),
+  );
 }
 
   @override
